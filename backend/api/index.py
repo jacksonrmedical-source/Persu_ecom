@@ -1,0 +1,2 @@
+from app.main import app  # noqa: F401
+# Vercel's Python runtime looks for an ASGI/WSGI `app` object in this file.
