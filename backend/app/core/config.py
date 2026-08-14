@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",
         "https://trendloot.vercel.app",
+        "https://persu-ecom.vercel.app",
     ]
 
     class Config:
