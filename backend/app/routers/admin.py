@@ -125,3 +125,29 @@ def delete_product(product_id: str):
     sb = get_supabase()
     sb.table("products").delete().eq("id", product_id).execute()
     return {"deleted": True}
+
+
+@router.get("/orders")
+def list_all_orders():
+    sb = get_supabase()
+    res = (
+        sb.table("orders")
+        .select("*, order_items(*), addresses(full_name, phone, city, state)")
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return res.data
+
+
+class OrderStatusUpdate(BaseModel):
+    status: str
+
+
+@router.patch("/orders/{order_id}")
+def update_order_status(order_id: str, payload: OrderStatusUpdate):
+    sb = get_supabase()
+    valid = {"pending", "paid", "processing", "shipped", "delivered", "cancelled", "refunded"}
+    if payload.status not in valid:
+        raise HTTPException(400, f"Status must be one of {sorted(valid)}")
+    sb.table("orders").update({"status": payload.status}).eq("id", order_id).execute()
+    return {"updated": True}

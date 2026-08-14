@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { adminApi } from "../../lib/adminApi";
 
 interface Category {
@@ -107,7 +108,12 @@ export default function AdminProductForm() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-8">
-      <h1 className="mb-6 font-display text-2xl font-bold text-ink">Add a product</h1>
+      <div className="mb-6 flex items-center gap-4">
+        <h1 className="font-display text-2xl font-bold text-ink">Add a product</h1>
+        <Link to="/admin/orders" className="font-body text-sm font-semibold text-pink">
+          View Orders →
+        </Link>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
