@@ -13,6 +13,7 @@ import Orders from "./pages/Orders";
 import AdminGate from "./pages/admin/AdminGate";
 import AdminProductForm from "./pages/admin/AdminProductForm";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminLogin from "./pages/admin/AdminLogin";
 import StaticInfoPage from "./pages/StaticInfoPage";
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/account" element={<Login />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/products/new" element={<AdminGate><AdminProductForm /></AdminGate>} />
             <Route path="/admin/orders" element={<AdminGate><AdminOrders /></AdminGate>} />
             <Route path="/returns" element={<StaticInfoPage title="Returns & Exchange" body="Items can be returned within 7 days of delivery, unused and with original tags. Refunds are processed within 5-7 business days of the return being received." />} />
