@@ -45,7 +45,7 @@ export default function Footer() {
 
       <div className="mx-auto mt-10 flex max-w-6xl flex-col items-center justify-between gap-3 border-t border-ink/15 pt-6 sm:flex-row">
         <p className="font-body text-xs text-ink/60">
-          © 2026 Persu. All prices in INR.
+          © 2026 PERZN. All prices in INR.
         </p>
         {/* Admin access lives here, deliberately separate from the customer-facing top nav */}
         <Link

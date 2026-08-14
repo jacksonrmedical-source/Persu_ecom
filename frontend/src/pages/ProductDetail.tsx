@@ -36,7 +36,7 @@ export default function ProductDetail() {
   const discountPct = Math.round(((product.mrp - product.sale_price) / product.mrp) * 100);
   const images = product.product_images?.length
     ? product.product_images
-    : [{ url: "https://placehold.co/600x800/FFF8F0/131A2B?text=Persu" }];
+    : [{ url: "https://placehold.co/600x800/FFF8F0/131A2B?text=PERZN" }];
 
   const handleAddToCart = async (goToCart: boolean) => {
     setAdding(true);

@@ -12,7 +12,7 @@ export default function ProductCard({ product, compact = true, forceDealEndTime 
   const primaryImage =
     product.product_images?.find((i) => i.is_primary)?.url ||
     product.product_images?.[0]?.url ||
-    "https://placehold.co/400x520/F5F5F6/282C3F?text=Persu";
+    "https://placehold.co/400x520/F5F5F6/282C3F?text=PERZN";
 
   const discountPct = Math.round(
     ((product.mrp - product.sale_price) / product.mrp) * 100
@@ -49,7 +49,7 @@ export default function ProductCard({ product, compact = true, forceDealEndTime 
       </div>
 
       <div className="mt-2 space-y-0.5">
-        <p className={`font-body font-bold text-ink ${titleSize}`}>Persu</p>
+        <p className={`font-body font-bold text-ink ${titleSize}`}>PERZN</p>
         <p className={`line-clamp-1 font-body text-muted ${titleSize}`}>{product.title}</p>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className={`font-body font-bold text-ink ${titleSize}`}>₹{product.sale_price}</span>

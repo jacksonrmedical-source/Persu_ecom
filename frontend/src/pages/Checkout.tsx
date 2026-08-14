@@ -100,7 +100,7 @@ export default function Checkout() {
         key: razorpay_key_id,
         amount,
         currency,
-        name: "Persu",
+        name: "PERZN",
         description: "Order payment",
         order_id: razorpay_order_id,
         prefill: {

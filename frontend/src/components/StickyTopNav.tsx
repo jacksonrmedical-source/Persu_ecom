@@ -80,7 +80,7 @@ export default function StickyTopNav() {
 
           <Link to="/" className="shrink-0 leading-tight">
             <span className="font-display text-2xl font-black tracking-tight text-ink">
-              Persu
+              PERZN
             </span>
           </Link>
 

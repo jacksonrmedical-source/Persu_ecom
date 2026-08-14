@@ -3,7 +3,7 @@ import { api } from "../lib/api";
 import { Product } from "../lib/types";
 import DealRail from "./DealRail";
 
-export const RECENTLY_VIEWED_KEY = "persu_recently_viewed";
+export const RECENTLY_VIEWED_KEY = "perzn_recently_viewed";
 
 export default function RecentlyViewedRail() {
   const [products, setProducts] = useState<Product[]>([]);

@@ -1,4 +1,4 @@
-# TrendLoot
+# PERZN
 
 A deal-driven fashion e-commerce site (inspired by Street Style Store's structure) —
 curated flash-deal rails, scarcity-driven "loot meter" stock gauges, and UPI/card
@@ -10,7 +10,7 @@ Razorpay · Vercel (deploy target for both)
 ## Project layout
 
 ```
-trendloot/
+perzn/
 ├── backend/          FastAPI app (Supabase service-role access + Razorpay)
 │   ├── app/
 │   │   ├── routers/  categories, products, collections, cart, coupons, orders

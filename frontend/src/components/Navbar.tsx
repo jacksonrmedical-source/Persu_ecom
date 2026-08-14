@@ -36,7 +36,7 @@ export default function Navbar() {
       <div className="flex items-center justify-between gap-4 px-4 py-3">
         <Link to="/" className="leading-tight">
           <span className="font-display text-2xl font-black tracking-tight">
-            <span className="text-pink">Persu</span>
+            <span className="text-pink">PERZN</span>
           </span>
           <span className="block font-body text-[9px] font-semibold uppercase tracking-[0.2em] text-muted">
             Drape Fashion

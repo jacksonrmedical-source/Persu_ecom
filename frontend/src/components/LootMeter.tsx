@@ -3,7 +3,7 @@ interface LootMeterProps {
 }
 
 /**
- * The "loot meter" — TrendLoot's signature scarcity gauge.
+ * The "loot meter" — PERZN's signature scarcity gauge.
  * A fuel-gauge needle instead of a plain "3 left" label, because
  * urgency reads faster as a shape than as text.
  */

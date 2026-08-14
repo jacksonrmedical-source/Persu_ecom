@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     ADMIN_SECRET: str = ""  # shared password for the admin product form
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",
-        "https://trendloot.vercel.app",
-        "https://persu-ecom.vercel.app",
+        "https://perzn.vercel.app",
+        "https://perzn-ecom.vercel.app",
     ]
 
     class Config:

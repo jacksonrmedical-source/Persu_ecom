@@ -7,11 +7,11 @@ export const adminApi = axios.create({
 // The admin key is kept in memory only (sessionStorage), never in env files
 // or committed anywhere — it's typed in each browser session.
 export function setAdminKey(key: string) {
-  sessionStorage.setItem("trendloot_admin_key", key);
+  sessionStorage.setItem("perzn_admin_key", key);
 }
 
 export function getAdminKey(): string | null {
-  return sessionStorage.getItem("trendloot_admin_key");
+  return sessionStorage.getItem("perzn_admin_key");
 }
 
 adminApi.interceptors.request.use((config) => {

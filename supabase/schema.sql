@@ -1,4 +1,4 @@
--- TrendLoot database schema (Supabase / Postgres)
+-- PERZN database schema (Supabase / Postgres)
 -- Run in Supabase SQL editor, top to bottom.
 
 create extension if not exists "uuid-ossp";

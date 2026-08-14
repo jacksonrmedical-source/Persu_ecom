@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routers import products, categories, collections, cart, coupons, orders, admin
 
-app = FastAPI(title="TrendLoot API", version="0.1.0")
+app = FastAPI(title="PERZN API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,4 +25,4 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "service": "trendloot-api"}
+    return {"status": "ok", "service": "perzn-api"}
