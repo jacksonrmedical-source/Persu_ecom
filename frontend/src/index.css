@@ -7,13 +7,13 @@ html {
 }
 
 ::selection {
-  background-color: #FF3F6C;
+  background-color: #0071CE;
   color: white;
 }
 
 /* visible keyboard focus everywhere */
 :focus-visible {
-  outline: 2px solid #282C3F;
+  outline: 2px solid #1A1A1A;
   outline-offset: 2px;
 }
 
@@ -26,10 +26,17 @@ html {
 }
 
 .btn-gradient {
-  background-image: linear-gradient(135deg, #FF3F6C, #7C3AED);
+  background-color: #0071CE;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 700;
+  transition: background-color 0.15s ease;
 }
 .btn-gradient:hover {
-  background-image: linear-gradient(135deg, #E62E5A, #6D28D9);
+  background-color: #005A9E;
 }
 
 @media (prefers-reduced-motion: reduce) {

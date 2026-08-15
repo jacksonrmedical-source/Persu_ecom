@@ -4,25 +4,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        pink: "#FF3F6C",      // primary CTA, discount tags, sale price
-        purple: "#7C3AED",    // gradient partner for pink, premium accents
-        gold: "#C99A3B",      // ratings, premium badges
-        amber: "#F59E0B",     // header/footer solid background
-        ink: "#282C3F",       // primary text
-        muted: "#94969F",     // secondary text, product subtitles
-        sand: "#FFFDF9",      // page background — warm off-white, not stark white
-        panel: "#F5F5F6",     // card/section backgrounds
-        border: "#E9E9EB",
-        teal: "#14958F",      // ratings badge
-        lime: "#14958F",      // kept alias so existing "in stock" usages still resolve
+        // Walmart-inspired palette, ASOS-style neutral/dense structure
+        pink: "#0071CE",       // = Walmart Blue — primary CTA, links, active states
+        purple: "#041E42",     // = Walmart Navy — header/footer dark blocks
+        gold: "#FF6B1A",       // spark accent — All Categories pill, cart badge, category strip
+        amber: "#0071CE",
+        ink: "#1A1A1A",        // near-black, ASOS-style body/heading text
+        muted: "#707070",      // cool gray meta text
+        sand: "#FFFFFF",       // stark white canvas — ASOS is not warm/cream
+        panel: "#F5F5F5",
+        border: "#E5E5E5",
+        teal: "#2E7D32",       // = success/delivered
+        lime: "#2E7D32",
       },
       fontFamily: {
-        display: ["'Playfair Display'", "serif"],
+        // One neutral grotesk at varying weight, ASOS-style — not a
+        // display/body pairing. Uniformity is the point here.
+        display: ["Inter", "sans-serif"],
         body: ["Inter", "sans-serif"],
         mono: ["Inter", "sans-serif"],
       },
       borderRadius: {
-        card: "4px",
+        card: "0px",
       },
     },
   },

@@ -69,22 +69,22 @@ export default function StickyTopNav() {
 
   return (
     <header className="sticky top-0 z-40">
-      <div className="bg-amber px-4" style={{ minHeight: 64 }}>
+      <div className="bg-pink px-4" style={{ minHeight: 64 }}>
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4">
-          <button
-            onClick={() => setMenuOpen((o) => !o)}
-            className="hidden shrink-0 items-center gap-1 rounded-full bg-white px-3 py-1.5 font-body text-xs font-semibold text-ink hover:bg-white/80 md:flex"
-          >
-            <MenuIcon /> All Categories
-          </button>
-
           <Link to="/" className="shrink-0 leading-tight">
-            <span className="font-display text-2xl font-black tracking-tight text-ink">
+            <span className="font-display text-2xl font-black tracking-tight text-white">
               PERZN
             </span>
           </Link>
 
-          <div ref={searchRef} className="relative flex-1">
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            className="hidden shrink-0 items-center gap-1 rounded-full bg-gold px-3 py-1.5 font-body text-xs font-semibold text-white hover:opacity-90 md:flex"
+          >
+            <MenuIcon /> All Categories
+          </button>
+
+          <div ref={searchRef} className="relative w-full max-w-md">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -115,11 +115,11 @@ export default function StickyTopNav() {
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-4">
+          <div className="ml-auto flex shrink-0 items-center gap-4">
             <div ref={accountRef} className="relative hidden sm:block">
               <button
                 onClick={() => setAccountOpen((o) => !o)}
-                className="font-body text-sm font-semibold text-ink"
+                className="font-body text-sm font-semibold text-white"
               >
                 {email ? email.split("@")[0] : "Sign In"}
               </button>
@@ -154,10 +154,10 @@ export default function StickyTopNav() {
                 </div>
               )}
             </div>
-            <Link to="/cart" aria-label="Cart" className="relative text-ink">
+            <Link to="/cart" aria-label="Cart" className="relative text-white">
               <CartIcon />
               {itemCount > 0 && (
-                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-pink font-body text-[10px] font-bold text-white">
+                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-gold font-body text-[10px] font-bold text-white">
                   {itemCount}
                 </span>
               )}
@@ -167,14 +167,14 @@ export default function StickyTopNav() {
       </div>
 
       {/* secondary category strip */}
-      <div className="flex gap-5 overflow-x-auto border-b border-border bg-white px-4 py-2.5">
+      <div className="flex gap-5 overflow-x-auto bg-gold px-4 py-2.5">
         {SECONDARY_LINKS.map((link) => (
           <NavLink
             key={link.href}
             to={link.href}
             className={({ isActive }) =>
               `shrink-0 font-body text-xs font-bold uppercase tracking-wide ${
-                isActive ? "text-pink" : "text-ink/70 hover:text-ink"
+                isActive ? "text-ink" : "text-white/85 hover:text-white"
               }`
             }
           >
