@@ -46,8 +46,17 @@ export default function Home() {
   }, []);
 
   return (
-    <div>
-      <HeroCarousel />
+    <div className="relative overflow-hidden">
+      {/* Brand watermark — large, faint, non-interactive */}
+      <img
+        src="/logo-mark.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-24 top-32 z-0 w-[420px] opacity-[0.05] sm:w-[560px]"
+      />
+
+      <div className="relative z-10">
+        <HeroCarousel />
 
       {topDeals.length > 0 && (
         <section className="py-6">
@@ -79,6 +88,7 @@ export default function Home() {
           products={collectionProducts[c.slug] || []}
         />
       ))}
+      </div>
     </div>
   );
 }

@@ -75,7 +75,7 @@ export default function StickyTopNav() {
       <div className="bg-pink px-4" style={{ minHeight: 72 }}>
         <div className="mx-auto flex h-[72px] max-w-7xl items-center gap-4">
           <Link to="/" className="shrink-0" aria-label="PERZN">
-            <Logo iconOnly iconClassName="h-14 w-auto" />
+            <Logo textOnly textClassName="text-3xl" />
           </Link>
 
           {/* Delivery location — Walmart-style pill. Static placeholder for now;
