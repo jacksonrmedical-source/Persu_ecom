@@ -1,52 +1,47 @@
-import { useState, ReactNode } from "react";
-import { adminApi, setAdminKey, getAdminKey } from "../../lib/adminApi";
+import { useEffect, useState, ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "../../lib/supabaseClient";
+import { api } from "../../lib/api";
+
+type Status = "checking" | "ok" | "denied";
 
 export default function AdminGate({ children }: { children: ReactNode }) {
-  const [unlocked, setUnlocked] = useState(!!getAdminKey());
-  const [input, setInput] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [checking, setChecking] = useState(false);
+  const [status, setStatus] = useState<Status>("checking");
 
-  const handleUnlock = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setChecking(true);
-    setError(null);
-    setAdminKey(input);
-    try {
-      // any admin-protected GET works as a verification ping
-      await adminApi.get("/admin/categories");
-      setUnlocked(true);
-    } catch {
-      setAdminKey("");
-      setError("Wrong key");
-    } finally {
-      setChecking(false);
-    }
-  };
+  useEffect(() => {
+    const check = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        setStatus("denied");
+        return;
+      }
+      try {
+        await api.get("/admin/categories"); // any admin-only endpoint verifies the role server-side
+        setStatus("ok");
+      } catch {
+        setStatus("denied");
+      }
+    };
+    check();
+  }, []);
 
-  if (unlocked) return <>{children}</>;
+  if (status === "checking") {
+    return <div className="px-4 py-16 text-center text-muted">Checking access...</div>;
+  }
 
-  return (
-    <div className="mx-auto max-w-xs px-4 py-24">
-      <h1 className="mb-4 font-display text-xl font-bold text-ink">Admin access</h1>
-      <form onSubmit={handleUnlock} className="space-y-3">
-        <input
-          type="password"
-          placeholder="Admin key"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
-          autoFocus
-        />
-        {error && <p className="font-body text-sm text-pink">{error}</p>}
-        <button
-          type="submit"
-          disabled={checking}
-          className="w-full rounded-full bg-ink py-3 font-body text-sm font-bold text-sand disabled:opacity-50"
-        >
-          {checking ? "Checking..." : "Unlock"}
-        </button>
-      </form>
-    </div>
-  );
+  if (status === "denied") {
+    return (
+      <div className="mx-auto max-w-sm px-4 py-16 text-center">
+        <h1 className="mb-2 font-display text-xl font-bold text-ink">Admin access required</h1>
+        <p className="mb-6 font-body text-sm text-muted">
+          Sign in with an admin account to continue.
+        </p>
+        <Link to="/admin/login" className="inline-block rounded-full bg-ink px-6 py-2.5 font-body text-sm font-bold text-white">
+          Go to admin sign in
+        </Link>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }

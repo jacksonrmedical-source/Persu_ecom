@@ -1,17 +1,18 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { setAdminKey } from "../../lib/adminApi";
+import { supabase } from "../../lib/supabaseClient";
 
 const TABS = [
   { label: "Dashboard", href: "/admin" },
   { label: "Add Product", href: "/admin/products/new" },
   { label: "Orders", href: "/admin/orders" },
+  { label: "Customers", href: "/admin/customers" },
 ];
 
 export default function AdminLayout() {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    setAdminKey("");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate("/");
   };
 

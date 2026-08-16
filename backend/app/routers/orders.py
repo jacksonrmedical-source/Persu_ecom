@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.core.supabase_client import get_supabase
 from app.core.auth import get_current_user_id
 from app.core.config import settings
+from app.core.notifications import send_new_order_email
 
 router = APIRouter()
 
@@ -144,11 +145,21 @@ def verify_payment(payload: VerifyPaymentIn, user_id: str = Depends(get_current_
                 new_variant_stock = max(0, variant.data["stock"] - item["quantity"])
                 sb.table("product_variants").update({"stock": new_variant_stock}).eq("id", item["variant_id"]).execute()
 
-    # increment coupon usage if one was applied
+    # increment coupon usage if one was applied, and record it for audit/per-user-limit purposes
     if order.data.get("coupon_id"):
         coupon = sb.table("coupons").select("times_used").eq("id", order.data["coupon_id"]).single().execute()
         if coupon.data:
             sb.table("coupons").update({"times_used": coupon.data["times_used"] + 1}).eq("id", order.data["coupon_id"]).execute()
+        sb.table("coupon_redemptions").insert({
+            "coupon_id": order.data["coupon_id"],
+            "order_id": order.data["id"],
+            "user_id": user_id,
+        }).execute()
+
+    try:
+        send_new_order_email(order.data, order.data["order_items"])
+    except Exception:
+        pass  # never let a notification failure break the checkout response
 
     return {"verified": True}
 

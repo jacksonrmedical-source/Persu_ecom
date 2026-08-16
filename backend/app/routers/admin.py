@@ -6,9 +6,9 @@ from collections import defaultdict
 import csv
 import io
 from app.core.supabase_client import get_supabase
-from app.core.admin_auth import verify_admin
+from app.core.roles import require_admin
 
-router = APIRouter(dependencies=[Depends(verify_admin)])
+router = APIRouter(dependencies=[Depends(require_admin)])
 
 
 class VariantIn(BaseModel):
@@ -132,6 +132,63 @@ def delete_product(product_id: str):
     return {"deleted": True}
 
 
+class ProductUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    category_id: str | None = None
+    mrp: float | None = None
+    sale_price: float | None = None
+    stock_total: int | None = None
+    dispatch_hours: int | None = None
+    is_flash_deal: bool | None = None
+    flash_deal_ends_at: str | None = None
+    is_active: bool | None = None  # publish/unpublish
+
+
+@router.patch("/products/{product_id}")
+def update_product(product_id: str, payload: ProductUpdate):
+    sb = get_supabase()
+    updates = {k: v for k, v in payload.dict().items() if v is not None}
+    if not updates:
+        raise HTTPException(400, "No fields to update")
+    sb.table("products").update(updates).eq("id", product_id).execute()
+    return {"updated": True}
+
+
+@router.get("/customers")
+def list_customers():
+    """Lists customers with their order count and total spend.
+    Email comes from Supabase auth (not stored in profiles), so this
+    combines the admin auth API with our own order data.
+    """
+    sb = get_supabase()
+    profiles = sb.table("profiles").select("id, full_name, phone, role, created_at").order("created_at", desc=True).execute().data
+    orders = sb.table("orders").select("user_id, total, payment_status").execute().data
+
+    order_stats: dict[str, dict] = {}
+    for o in orders:
+        if o["payment_status"] != "paid" or not o["user_id"]:
+            continue
+        s = order_stats.setdefault(o["user_id"], {"order_count": 0, "total_spent": 0.0})
+        s["order_count"] += 1
+        s["total_spent"] += o["total"]
+
+    # auth.users email lookup via Supabase admin API
+    auth_users = sb.auth.admin.list_users()
+    email_by_id = {u.id: u.email for u in auth_users}
+
+    return [
+        {
+            **p,
+            "email": email_by_id.get(p["id"], ""),
+            "order_count": order_stats.get(p["id"], {}).get("order_count", 0),
+            "total_spent": round(order_stats.get(p["id"], {}).get("total_spent", 0), 2),
+        }
+        for p in profiles
+        if p.get("role") != "admin"  # don't list admin accounts as customers
+    ]
+
+
 @router.get("/orders")
 def list_all_orders():
     sb = get_supabase()
@@ -145,16 +202,44 @@ def list_all_orders():
 
 
 class OrderStatusUpdate(BaseModel):
-    status: str
+    status: str | None = None
+    tracking_number: str | None = None
+    carrier: str | None = None
+    refund_status: str | None = None
+    refund_amount: float | None = None
 
 
 @router.patch("/orders/{order_id}")
 def update_order_status(order_id: str, payload: OrderStatusUpdate):
     sb = get_supabase()
-    valid = {"pending", "paid", "processing", "shipped", "delivered", "cancelled", "refunded"}
-    if payload.status not in valid:
-        raise HTTPException(400, f"Status must be one of {sorted(valid)}")
-    sb.table("orders").update({"status": payload.status}).eq("id", order_id).execute()
+    updates: dict = {}
+
+    if payload.status is not None:
+        valid = {"pending", "paid", "processing", "shipped", "delivered", "cancelled", "refunded"}
+        if payload.status not in valid:
+            raise HTTPException(400, f"Status must be one of {sorted(valid)}")
+        updates["status"] = payload.status
+        if payload.status == "shipped":
+            updates["shipped_at"] = datetime.now(timezone.utc).isoformat()
+        if payload.status == "delivered":
+            updates["delivered_at"] = datetime.now(timezone.utc).isoformat()
+
+    if payload.tracking_number is not None:
+        updates["tracking_number"] = payload.tracking_number
+    if payload.carrier is not None:
+        updates["carrier"] = payload.carrier
+    if payload.refund_status is not None:
+        valid_refund = {"none", "requested", "processing", "refunded"}
+        if payload.refund_status not in valid_refund:
+            raise HTTPException(400, f"refund_status must be one of {sorted(valid_refund)}")
+        updates["refund_status"] = payload.refund_status
+    if payload.refund_amount is not None:
+        updates["refund_amount"] = payload.refund_amount
+
+    if not updates:
+        raise HTTPException(400, "No fields to update")
+
+    sb.table("orders").update(updates).eq("id", order_id).execute()
     return {"updated": True}
 
 
@@ -205,8 +290,9 @@ def get_analytics():
     products_res = sb.table("products").select("title, slug, stock_remaining, stock_total").eq("is_active", True).execute()
     low_stock = [
         p for p in products_res.data
-        if p["stock_total"] > 0 and p["stock_remaining"] / p["stock_total"] < 0.15
+        if p["stock_total"] > 0 and p["stock_remaining"] / p["stock_total"] < 0.15 and p["stock_remaining"] > 0
     ]
+    out_of_stock = [p for p in products_res.data if p["stock_remaining"] == 0]
 
     coupons_res = sb.table("coupons").select("code, times_used, usage_limit").execute()
 
@@ -218,6 +304,7 @@ def get_analytics():
         "status_breakdown": dict(status_breakdown),
         "top_products": top_products,
         "low_stock": low_stock,
+        "out_of_stock": out_of_stock,
         "sales_by_day": sales_series,
         "coupon_stats": coupons_res.data,
     }

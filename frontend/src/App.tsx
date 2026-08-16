@@ -15,6 +15,7 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProductForm from "./pages/admin/AdminProductForm";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminLogin from "./pages/admin/AdminLogin";
 import StaticInfoPage from "./pages/StaticInfoPage";
 
@@ -39,6 +40,7 @@ export default function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="products/new" element={<AdminProductForm />} />
               <Route path="orders" element={<AdminOrders />} />
+              <Route path="customers" element={<AdminCustomers />} />
             </Route>
             <Route path="/returns" element={<StaticInfoPage title="Returns & Exchange" body="Items can be returned within 7 days of delivery, unused and with original tags. Refunds are processed within 5-7 business days of the return being received." />} />
             <Route path="/shipping" element={<StaticInfoPage title="Shipping Policy" body="Most orders dispatch within 24-48 hours and arrive within 3-7 business days depending on location. Tracking details are emailed once your order ships." />} />
