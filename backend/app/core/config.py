@@ -8,10 +8,11 @@ class Settings(BaseSettings):
     RAZORPAY_KEY_ID: str = ""
     RAZORPAY_KEY_SECRET: str = ""
     ADMIN_SECRET: str = ""  # shared password for the admin product form
+    RESEND_API_KEY: str = ""       # from resend.com dashboard
+    ADMIN_NOTIFY_EMAIL: str = ""   # where new-order emails get sent
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",
-        "https://perzn.vercel.app",
-        "https://perzn-ecom.vercel.app",
+        "https://persu-ecom.vercel.app",
     ]
 
     class Config:
