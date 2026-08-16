@@ -4,6 +4,7 @@ import { useCart } from "../hooks/useCart";
 import { useAllProducts } from "../lib/allProductsContext";
 import { supabase } from "../lib/supabaseClient";
 import MegaMenu from "./MegaMenu";
+import Logo from "./Logo";
 
 const SECONDARY_LINKS = [
   { label: "Flash Deals", href: "/collection/flash-deals" },
@@ -69,53 +70,53 @@ export default function StickyTopNav() {
 
   return (
     <header className="sticky top-0 z-40">
-      <div className="bg-pink px-4" style={{ minHeight: 64 }}>
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-4">
-          <Link to="/" className="shrink-0 leading-tight">
-            <span className="font-display text-2xl font-black tracking-tight text-white">
-              PERZN
-            </span>
+      <div className="bg-pink px-4" style={{ minHeight: 88 }}>
+        <div className="mx-auto flex h-[88px] max-w-6xl items-center gap-4">
+          <Link to="/" className="shrink-0 leading-tight text-white">
+            <Logo iconClassName="h-14 w-auto" textClassName="text-3xl" />
           </Link>
 
-          <button
-            onClick={() => setMenuOpen((o) => !o)}
-            className="hidden shrink-0 items-center gap-1 rounded-full bg-gold px-3 py-1.5 font-body text-xs font-semibold text-white hover:opacity-90 md:flex"
-          >
-            <MenuIcon /> All Categories
-          </button>
+          <div className="ml-auto flex items-center gap-3">
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label="All Categories"
+              className="hidden shrink-0 items-center justify-center rounded-full bg-gold p-2 text-white hover:opacity-90 md:flex"
+            >
+              <MenuIcon />
+            </button>
 
-          <div ref={searchRef} className="relative w-full max-w-md">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => setSearchOpen(true)}
-              placeholder="Search for products, brands and more"
-              className="w-full rounded-full border-none bg-white px-4 py-2.5 font-body text-sm text-ink outline-none focus:ring-2 focus:ring-ink/30"
-            />
-            {searchOpen && results.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-2 max-h-96 overflow-y-auto rounded-xl bg-white p-2 shadow-xl">
-                {results.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => goToProduct(p.slug)}
-                    className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-panel"
-                  >
-                    <img
-                      src={p.product_images?.[0]?.url || "https://placehold.co/60x80"}
-                      alt=""
-                      className="h-12 w-9 rounded object-cover"
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate font-body text-sm text-ink">{p.title}</p>
-                      <p className="font-body text-xs text-muted">₹{p.sale_price}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+            <div ref={searchRef} className="relative w-56 sm:w-72">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setSearchOpen(true)}
+                placeholder="Search for products, brands and more"
+                className="w-full rounded-full border-none bg-white px-4 py-2.5 font-body text-sm text-ink outline-none focus:ring-2 focus:ring-ink/30"
+              />
+              {searchOpen && results.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-2 max-h-96 overflow-y-auto rounded-xl bg-white p-2 shadow-xl">
+                  {results.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => goToProduct(p.slug)}
+                      className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-panel"
+                    >
+                      <img
+                        src={p.product_images?.[0]?.url || "https://placehold.co/60x80"}
+                        alt=""
+                        className="h-12 w-9 rounded object-cover"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate font-body text-sm text-ink">{p.title}</p>
+                        <p className="font-body text-xs text-muted">₹{p.sale_price}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-4">
+          <div className="flex shrink-0 items-center gap-4">
             <div ref={accountRef} className="relative hidden sm:block">
               <button
                 onClick={() => setAccountOpen((o) => !o)}
@@ -154,8 +155,8 @@ export default function StickyTopNav() {
                 </div>
               )}
             </div>
-            <Link to="/cart" aria-label="Cart" className="relative text-white">
-              <CartIcon />
+            <Link to="/cart" aria-label="Bag" className="relative text-white">
+              <BagIcon />
               {itemCount > 0 && (
                 <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-gold font-body text-[10px] font-bold text-white">
                   {itemCount}
@@ -163,6 +164,7 @@ export default function StickyTopNav() {
               )}
             </Link>
           </div>
+        </div>
         </div>
       </div>
 
@@ -196,7 +198,7 @@ function MenuIcon() {
   );
 }
 
-function CartIcon() {
+function BagIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <circle cx="9" cy="21" r="1.5" />

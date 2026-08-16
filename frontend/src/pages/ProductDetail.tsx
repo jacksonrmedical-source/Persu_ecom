@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { Product } from "../lib/types";
 import { useCart } from "../hooks/useCart";
-import LootMeter from "../components/LootMeter";
 import CountdownBadge from "../components/CountdownBadge";
 import { RECENTLY_VIEWED_KEY } from "../components/RecentlyViewedRail";
 
@@ -46,7 +45,7 @@ export default function ProductDetail() {
       if (goToCart) navigate("/cart");
     } catch (err: any) {
       if (err?.response?.status === 401 || err?.response?.status === 422) {
-        setCartError("Please log in to add items to your cart.");
+        setCartError("Please log in to add items to your bag.");
       } else {
         setCartError("Couldn't add to cart — please try again.");
       }
@@ -102,10 +101,6 @@ export default function ProductDetail() {
                 </span>
               </>
             )}
-          </div>
-
-          <div className="mt-3">
-            <LootMeter stockRatio={product.stock_ratio ?? 1} />
           </div>
 
           {product.product_variants && product.product_variants.length > 0 && (

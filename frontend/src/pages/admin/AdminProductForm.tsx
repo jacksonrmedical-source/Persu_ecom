@@ -41,6 +41,8 @@ export default function AdminProductForm() {
 
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ created: number; errors: string[] } | null>(null);
 
   useEffect(() => {
     adminApi.get<Category[]>("/admin/categories").then((res) => {
@@ -67,6 +69,26 @@ export default function AdminProductForm() {
     setImageUrls([""]);
     setVariants([]);
     setSelectedCollections([]);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await adminApi.post("/admin/products/import", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setImportResult(res.data);
+    } catch (err: any) {
+      setImportResult({ created: 0, errors: [err?.response?.data?.detail || "Import failed"] });
+    } finally {
+      setImporting(false);
+      e.target.value = "";
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,11 +130,33 @@ export default function AdminProductForm() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-8">
-      <div className="mb-6 flex items-center gap-4">
-        <h1 className="font-display text-2xl font-bold text-ink">Add a product</h1>
-        <Link to="/admin/orders" className="font-body text-sm font-semibold text-pink">
-          View Orders →
-        </Link>
+      <h1 className="mb-4 font-display text-2xl font-bold text-ink">Add a product</h1>
+
+      <div className="mb-8 rounded-card border border-border bg-panel p-4">
+        <h2 className="mb-1 font-body text-sm font-bold text-ink">Bulk import from CSV</h2>
+        <p className="mb-3 font-body text-xs text-muted">
+          Columns: title, slug, category_slug, description, mrp, sale_price, stock_total, is_flash_deal, dispatch_hours, image_url
+        </p>
+        <input
+          type="file"
+          accept=".csv"
+          onChange={handleImport}
+          disabled={importing}
+          className="font-body text-xs"
+        />
+        {importing && <p className="mt-2 font-body text-xs text-muted">Importing...</p>}
+        {importResult && (
+          <div className="mt-3 font-body text-xs">
+            <p className="font-semibold text-ink">Created {importResult.created} product(s).</p>
+            {importResult.errors.length > 0 && (
+              <ul className="mt-1 space-y-0.5 text-pink">
+                {importResult.errors.map((e, i) => (
+                  <li key={i}>{e}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">

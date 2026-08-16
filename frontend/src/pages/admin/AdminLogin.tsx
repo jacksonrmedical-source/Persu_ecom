@@ -15,7 +15,7 @@ export default function AdminLogin() {
     setAdminKey(key);
     try {
       await adminApi.get("/admin/categories");
-      navigate("/admin/orders");
+      navigate("/admin");
     } catch {
       setAdminKey("");
       setError("Wrong admin key");
