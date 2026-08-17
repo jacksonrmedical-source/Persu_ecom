@@ -20,11 +20,16 @@ interface Order {
   total: number;
   payment_status: string;
   created_at: string;
+  tracking_number: string | null;
+  carrier: string | null;
+  refund_status: string;
+  refund_amount: number | null;
   order_items: OrderItem[];
   addresses: Address | null;
 }
 
 const STATUS_OPTIONS = ["pending", "paid", "processing", "shipped", "delivered", "cancelled", "refunded"];
+const REFUND_OPTIONS = ["none", "requested", "processing", "refunded"];
 
 const STATUS_COLOR: Record<string, string> = {
   pending: "bg-panel text-muted",
@@ -40,6 +45,9 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // local edit buffers, keyed by order id, so typing doesn't trigger a save on every keystroke
+  const [drafts, setDrafts] = useState<Record<string, { tracking_number: string; carrier: string; refund_status: string; refund_amount: string }>>({});
+  const [saving, setSaving] = useState<string | null>(null);
 
   const load = () => {
     adminApi.get<Order[]>("/admin/orders").then((res) => {
@@ -58,6 +66,35 @@ export default function AdminOrders() {
   const updateStatus = async (orderId: string, status: string) => {
     await adminApi.patch(`/admin/orders/${orderId}`, { status });
     load();
+  };
+
+  const startEditing = (order: Order) => {
+    setDrafts((d) => ({
+      ...d,
+      [order.id]: {
+        tracking_number: order.tracking_number || "",
+        carrier: order.carrier || "",
+        refund_status: order.refund_status || "none",
+        refund_amount: order.refund_amount != null ? String(order.refund_amount) : "",
+      },
+    }));
+  };
+
+  const saveDraft = async (orderId: string) => {
+    const draft = drafts[orderId];
+    if (!draft) return;
+    setSaving(orderId);
+    try {
+      await adminApi.patch(`/admin/orders/${orderId}`, {
+        tracking_number: draft.tracking_number || null,
+        carrier: draft.carrier || null,
+        refund_status: draft.refund_status,
+        refund_amount: draft.refund_amount ? parseFloat(draft.refund_amount) : null,
+      });
+      load();
+    } finally {
+      setSaving(null);
+    }
   };
 
   if (loading) return <div className="px-4 py-16 text-center text-muted">Loading orders...</div>;
@@ -79,7 +116,11 @@ export default function AdminOrders() {
         {orders.map((order) => (
           <div key={order.id} className="rounded-card border border-border bg-white">
             <button
-              onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
+              onClick={() => {
+                const opening = expandedId !== order.id;
+                setExpandedId(opening ? order.id : null);
+                if (opening && !drafts[order.id]) startEditing(order);
+              }}
               className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
             >
               <div className="min-w-0">
@@ -121,6 +162,57 @@ export default function AdminOrders() {
                     ))}
                   </select>
                 </div>
+
+                {drafts[order.id] && (
+                  <div className="mt-4 space-y-2 border-t border-border pt-3">
+                    <p className="font-body text-xs font-bold text-ink">Shipping & Refund</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        value={drafts[order.id].tracking_number}
+                        onChange={(e) =>
+                          setDrafts((d) => ({ ...d, [order.id]: { ...d[order.id], tracking_number: e.target.value } }))
+                        }
+                        placeholder="Tracking number"
+                        className="rounded-md border border-border px-2 py-1.5 font-body text-xs"
+                      />
+                      <input
+                        value={drafts[order.id].carrier}
+                        onChange={(e) =>
+                          setDrafts((d) => ({ ...d, [order.id]: { ...d[order.id], carrier: e.target.value } }))
+                        }
+                        placeholder="Carrier (e.g. Delhivery)"
+                        className="rounded-md border border-border px-2 py-1.5 font-body text-xs"
+                      />
+                      <select
+                        value={drafts[order.id].refund_status}
+                        onChange={(e) =>
+                          setDrafts((d) => ({ ...d, [order.id]: { ...d[order.id], refund_status: e.target.value } }))
+                        }
+                        className="rounded-md border border-border px-2 py-1.5 font-body text-xs capitalize"
+                      >
+                        {REFUND_OPTIONS.map((r) => (
+                          <option key={r} value={r}>Refund: {r}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        value={drafts[order.id].refund_amount}
+                        onChange={(e) =>
+                          setDrafts((d) => ({ ...d, [order.id]: { ...d[order.id], refund_amount: e.target.value } }))
+                        }
+                        placeholder="Refund amount (₹)"
+                        className="rounded-md border border-border px-2 py-1.5 font-body text-xs"
+                      />
+                    </div>
+                    <button
+                      onClick={() => saveDraft(order.id)}
+                      disabled={saving === order.id}
+                      className="rounded-full bg-ink px-4 py-1.5 font-body text-xs font-bold text-white disabled:opacity-50"
+                    >
+                      {saving === order.id ? "Saving..." : "Save shipping & refund"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

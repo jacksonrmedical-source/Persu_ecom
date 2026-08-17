@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import products, categories, collections, cart, coupons, orders, admin
+from app.routers import products, categories, collections, cart, coupons, orders, admin, wishlist
 
 app = FastAPI(title="PERZN API", version="0.1.0")
 
@@ -21,6 +21,7 @@ app.include_router(cart.router, prefix="/api/cart", tags=["cart"])
 app.include_router(coupons.router, prefix="/api/coupons", tags=["coupons"])
 app.include_router(orders.router, prefix="/api/orders", tags=["orders"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(wishlist.router, prefix="/api/wishlist", tags=["wishlist"])
 
 
 @app.get("/api/health")

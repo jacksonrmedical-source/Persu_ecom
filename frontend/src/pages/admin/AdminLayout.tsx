@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabaseClient";
 
 const TABS = [
   { label: "Dashboard", href: "/admin" },
-  { label: "Add Product", href: "/admin/products/new" },
+  { label: "Products", href: "/admin/products" },
   { label: "Orders", href: "/admin/orders" },
   { label: "Customers", href: "/admin/customers" },
 ];

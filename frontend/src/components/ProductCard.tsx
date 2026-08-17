@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Product } from "../lib/types";
 import CountdownBadge from "./CountdownBadge";
+import { useWishlist } from "../hooks/useWishlist";
 
 interface ProductCardProps {
   product: Product;
@@ -9,6 +10,10 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, compact = true, forceDealEndTime }: ProductCardProps) {
+  const navigate = useNavigate();
+  const { productIds, toggle } = useWishlist();
+  const isWishlisted = productIds.has(product.id);
+
   const primaryImage =
     product.product_images?.find((i) => i.is_primary)?.url ||
     product.product_images?.[0]?.url ||
@@ -27,6 +32,17 @@ export default function ProductCard({ product, compact = true, forceDealEndTime 
   const cardWidth = compact ? "w-[168px] sm:w-[200px]" : "w-full sm:w-[260px]";
   const titleSize = compact ? "text-[13px]" : "text-base";
 
+  const handleWishlistClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await toggle(product.id);
+    } catch (err: any) {
+      if (err?.response?.status === 401 || err?.response?.status === 422) {
+        navigate("/login");
+      }
+    }
+  };
+
   return (
     <Link to={`/product/${product.slug}`} className={`group block shrink-0 ${cardWidth}`}>
       <div className="relative overflow-hidden rounded-card border border-border bg-white">
@@ -38,11 +54,18 @@ export default function ProductCard({ product, compact = true, forceDealEndTime 
         />
         {showCountdown && <CountdownBadge endsAt={countdownEndsAt} />}
         <button
-          aria-label="Add to wishlist"
-          onClick={(e) => e.preventDefault()}
+          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          onClick={handleWishlistClick}
           className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-muted hover:text-pink"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill={isWishlisted ? "#0A0F2D" : "none"}
+            stroke={isWishlisted ? "#0A0F2D" : "currentColor"}
+            strokeWidth="2"
+          >
             <path d="M20.8 4.6c-1.8-1.8-4.7-1.8-6.5 0L12 6.9l-2.3-2.3c-1.8-1.8-4.7-1.8-6.5 0-1.8 1.8-1.8 4.7 0 6.5L12 20.4l8.8-9.3c1.8-1.8 1.8-4.7 0-6.5z" />
           </svg>
         </button>

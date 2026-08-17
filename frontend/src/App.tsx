@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { CartProvider } from "./hooks/useCart";
+import { WishlistProvider } from "./hooks/useWishlist";
 import { AllProductsProvider } from "./lib/allProductsContext";
 import StickyTopNav from "./components/StickyTopNav";
 import Footer from "./components/Footer";
@@ -14,14 +15,17 @@ import AdminGate from "./pages/admin/AdminGate";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProductForm from "./pages/admin/AdminProductForm";
+import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminLogin from "./pages/admin/AdminLogin";
 import StaticInfoPage from "./pages/StaticInfoPage";
+import Wishlist from "./pages/Wishlist";
 
 export default function App() {
   return (
     <CartProvider>
+      <WishlistProvider>
       <AllProductsProvider>
         <StickyTopNav />
         <main className="min-h-[60vh]">
@@ -34,11 +38,14 @@ export default function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/login" element={<Login />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/account" element={<Login />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminGate><AdminLayout /></AdminGate>}>
               <Route index element={<AdminDashboard />} />
+              <Route path="products" element={<AdminProducts />} />
               <Route path="products/new" element={<AdminProductForm />} />
+              <Route path="products/:id/edit" element={<AdminProductForm />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="customers" element={<AdminCustomers />} />
             </Route>
@@ -52,6 +59,7 @@ export default function App() {
         </main>
         <Footer />
       </AllProductsProvider>
+      </WishlistProvider>
     </CartProvider>
   );
 }

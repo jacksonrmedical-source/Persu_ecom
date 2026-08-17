@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { adminApi } from "../../lib/adminApi";
 
 interface Category {
@@ -21,6 +21,10 @@ const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 export default function AdminProductForm() {
+  const { id } = useParams(); // present only on /admin/products/:id/edit
+  const isEditMode = !!id;
+  const navigate = useNavigate();
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
 
@@ -32,13 +36,16 @@ export default function AdminProductForm() {
   const [mrp, setMrp] = useState("");
   const [salePrice, setSalePrice] = useState("");
   const [stockTotal, setStockTotal] = useState("");
+  const [stockRemaining, setStockRemaining] = useState(""); // edit mode only
   const [dispatchHours, setDispatchHours] = useState("48");
   const [isFlashDeal, setIsFlashDeal] = useState(false);
   const [flashEndsAt, setFlashEndsAt] = useState("");
+  const [isActive, setIsActive] = useState(true); // edit mode only
   const [imageUrls, setImageUrls] = useState<string[]>([""]);
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
 
+  const [loadingProduct, setLoadingProduct] = useState(isEditMode);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [importing, setImporting] = useState(false);
@@ -47,14 +54,36 @@ export default function AdminProductForm() {
   useEffect(() => {
     adminApi.get<Category[]>("/admin/categories").then((res) => {
       setCategories(res.data);
-      if (res.data[0]) setCategoryId(res.data[0].id);
+      if (!isEditMode && res.data[0]) setCategoryId(res.data[0].id);
     });
     adminApi.get<Collection[]>("/admin/collections").then((res) => setCollections(res.data));
   }, []);
 
+  // Pre-fill the form when editing an existing product
   useEffect(() => {
-    if (!slugTouched) setSlug(slugify(title));
-  }, [title, slugTouched]);
+    if (!isEditMode) return;
+    adminApi.get(`/admin/products/${id}`).then((res) => {
+      const p = res.data;
+      setTitle(p.title);
+      setSlug(p.slug);
+      setSlugTouched(true);
+      setDescription(p.description || "");
+      setCategoryId(p.category_id || "");
+      setMrp(String(p.mrp));
+      setSalePrice(String(p.sale_price));
+      setStockTotal(String(p.stock_total));
+      setStockRemaining(String(p.stock_remaining));
+      setDispatchHours(String(p.dispatch_hours));
+      setIsFlashDeal(p.is_flash_deal);
+      setFlashEndsAt(p.flash_deal_ends_at ? p.flash_deal_ends_at.slice(0, 16) : "");
+      setIsActive(p.is_active);
+      setLoadingProduct(false);
+    });
+  }, [id]);
+
+  useEffect(() => {
+    if (!isEditMode && !slugTouched) setSlug(slugify(title));
+  }, [title, slugTouched, isEditMode]);
 
   const resetForm = () => {
     setTitle("");
@@ -95,32 +124,47 @@ export default function AdminProductForm() {
     e.preventDefault();
     setMessage(null);
 
-    if (!title || !slug || !categoryId || !mrp || !salePrice || !stockTotal) {
-      setMessage({ type: "error", text: "Fill in title, category, MRP, sale price, and stock." });
+    if (!title || !categoryId || !mrp || !salePrice) {
+      setMessage({ type: "error", text: "Fill in title, category, MRP, and sale price." });
       return;
     }
 
     setSubmitting(true);
     try {
-      const res = await adminApi.post("/admin/products", {
-        title,
-        slug,
-        description: description || null,
-        category_id: categoryId,
-        mrp: parseFloat(mrp),
-        sale_price: parseFloat(salePrice),
-        stock_total: parseInt(stockTotal, 10),
-        dispatch_hours: parseInt(dispatchHours, 10),
-        is_flash_deal: isFlashDeal,
-        flash_deal_ends_at: isFlashDeal && flashEndsAt ? new Date(flashEndsAt).toISOString() : null,
-        image_urls: imageUrls.filter((u) => u.trim()),
-        variants: variants
-          .filter((v) => v.size.trim())
-          .map((v) => ({ size: v.size, stock: v.stock })),
-        collection_ids: selectedCollections,
-      });
-      setMessage({ type: "success", text: `Created "${res.data.slug}" — live on the site now.` });
-      resetForm();
+      if (isEditMode) {
+        await adminApi.patch(`/admin/products/${id}`, {
+          title,
+          description: description || null,
+          category_id: categoryId,
+          mrp: parseFloat(mrp),
+          sale_price: parseFloat(salePrice),
+          stock_total: parseInt(stockTotal, 10),
+          stock_remaining: parseInt(stockRemaining, 10),
+          dispatch_hours: parseInt(dispatchHours, 10),
+          is_flash_deal: isFlashDeal,
+          flash_deal_ends_at: isFlashDeal && flashEndsAt ? new Date(flashEndsAt).toISOString() : null,
+          is_active: isActive,
+        });
+        setMessage({ type: "success", text: "Saved." });
+      } else {
+        const res = await adminApi.post("/admin/products", {
+          title,
+          slug,
+          description: description || null,
+          category_id: categoryId,
+          mrp: parseFloat(mrp),
+          sale_price: parseFloat(salePrice),
+          stock_total: parseInt(stockTotal, 10),
+          dispatch_hours: parseInt(dispatchHours, 10),
+          is_flash_deal: isFlashDeal,
+          flash_deal_ends_at: isFlashDeal && flashEndsAt ? new Date(flashEndsAt).toISOString() : null,
+          image_urls: imageUrls.filter((u) => u.trim()),
+          variants: variants.filter((v) => v.size.trim()).map((v) => ({ size: v.size, stock: v.stock })),
+          collection_ids: selectedCollections,
+        });
+        setMessage({ type: "success", text: `Created "${res.data.slug}" — live on the site now.` });
+        resetForm();
+      }
     } catch (err: any) {
       setMessage({ type: "error", text: err?.response?.data?.detail || "Something went wrong." });
     } finally {
@@ -128,36 +172,51 @@ export default function AdminProductForm() {
     }
   };
 
+  if (loadingProduct) {
+    return <div className="px-4 py-16 text-center text-muted">Loading product...</div>;
+  }
+
   return (
     <div className="mx-auto max-w-xl px-4 py-8">
-      <h1 className="mb-4 font-display text-2xl font-bold text-ink">Add a product</h1>
+      <h1 className="mb-4 font-display text-2xl font-bold text-ink">
+        {isEditMode ? "Edit product" : "Add a product"}
+      </h1>
 
-      <div className="mb-8 rounded-card border border-border bg-panel p-4">
-        <h2 className="mb-1 font-body text-sm font-bold text-ink">Bulk import from CSV</h2>
-        <p className="mb-3 font-body text-xs text-muted">
-          Columns: title, slug, category_slug, description, mrp, sale_price, stock_total, is_flash_deal, dispatch_hours, image_url
+      {isEditMode && (
+        <p className="mb-6 rounded-card bg-panel p-3 font-body text-xs text-muted">
+          Images, sizes, and collection placement aren't editable from this form yet —
+          only the fields below. Contact support or use Supabase directly for those.
         </p>
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleImport}
-          disabled={importing}
-          className="font-body text-xs"
-        />
-        {importing && <p className="mt-2 font-body text-xs text-muted">Importing...</p>}
-        {importResult && (
-          <div className="mt-3 font-body text-xs">
-            <p className="font-semibold text-ink">Created {importResult.created} product(s).</p>
-            {importResult.errors.length > 0 && (
-              <ul className="mt-1 space-y-0.5 text-pink">
-                {importResult.errors.map((e, i) => (
-                  <li key={i}>{e}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-      </div>
+      )}
+
+      {!isEditMode && (
+        <div className="mb-8 rounded-card border border-border bg-panel p-4">
+          <h2 className="mb-1 font-body text-sm font-bold text-ink">Bulk import from CSV</h2>
+          <p className="mb-3 font-body text-xs text-muted">
+            Columns: title, slug, category_slug, description, mrp, sale_price, stock_total, is_flash_deal, dispatch_hours, image_url
+          </p>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleImport}
+            disabled={importing}
+            className="font-body text-xs"
+          />
+          {importing && <p className="mt-2 font-body text-xs text-muted">Importing...</p>}
+          {importResult && (
+            <div className="mt-3 font-body text-xs">
+              <p className="font-semibold text-ink">Created {importResult.created} product(s).</p>
+              {importResult.errors.length > 0 && (
+                <ul className="mt-1 space-y-0.5 text-pink">
+                  {importResult.errors.map((e, i) => (
+                    <li key={i}>{e}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
@@ -170,19 +229,21 @@ export default function AdminProductForm() {
           />
         </div>
 
-        <div>
-          <label className="mb-1 block font-body text-xs font-semibold text-ink/60">
-            Slug (URL) — auto-filled, edit if needed
-          </label>
-          <input
-            value={slug}
-            onChange={(e) => {
-              setSlug(slugify(e.target.value));
-              setSlugTouched(true);
-            }}
-            className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-mono text-sm"
-          />
-        </div>
+        {!isEditMode && (
+          <div>
+            <label className="mb-1 block font-body text-xs font-semibold text-ink/60">
+              Slug (URL) — auto-filled, edit if needed
+            </label>
+            <input
+              value={slug}
+              onChange={(e) => {
+                setSlug(slugify(e.target.value));
+                setSlugTouched(true);
+              }}
+              className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-mono text-sm"
+            />
+          </div>
+        )}
 
         <div>
           <label className="mb-1 block font-body text-xs font-semibold text-ink/60">
@@ -211,7 +272,7 @@ export default function AdminProductForm() {
           </select>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className={`grid gap-3 ${isEditMode ? "grid-cols-2" : "grid-cols-3"}`}>
           <div>
             <label className="mb-1 block font-body text-xs font-semibold text-ink/60">MRP (₹)</label>
             <input
@@ -243,6 +304,19 @@ export default function AdminProductForm() {
               className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-mono text-sm"
             />
           </div>
+          {isEditMode && (
+            <div>
+              <label className="mb-1 block font-body text-xs font-semibold text-ink/60">
+                Stock remaining (restock here)
+              </label>
+              <input
+                type="number"
+                value={stockRemaining}
+                onChange={(e) => setStockRemaining(e.target.value)}
+                className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-mono text-sm"
+              />
+            </div>
+          )}
         </div>
 
         <div>
@@ -279,110 +353,127 @@ export default function AdminProductForm() {
           )}
         </div>
 
-        <div>
-          <label className="mb-1 block font-body text-xs font-semibold text-ink/60">
-            Image URLs (first one is the primary image)
-          </label>
-          {imageUrls.map((url, i) => (
-            <div key={i} className="mb-2 flex gap-2">
+        {isEditMode && (
+          <div className="rounded-card bg-white p-4">
+            <label className="flex items-center gap-2 font-body text-sm font-medium text-ink">
               <input
-                value={url}
-                onChange={(e) => {
-                  const next = [...imageUrls];
-                  next[i] = e.target.value;
-                  setImageUrls(next);
-                }}
-                placeholder="https://..."
-                className="flex-1 rounded-md border border-ink/15 px-3 py-2 font-mono text-xs"
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
               />
-              {imageUrls.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setImageUrls(imageUrls.filter((_, idx) => idx !== i))}
-                  className="rounded-md border border-ink/15 px-2 text-ink/50"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => setImageUrls([...imageUrls, ""])}
-            className="font-body text-xs font-semibold text-pink"
-          >
-            + Add another image
-          </button>
-        </div>
+              Published (visible on the storefront)
+            </label>
+          </div>
+        )}
 
-        <div>
-          <label className="mb-1 block font-body text-xs font-semibold text-ink/60">
-            Sizes (leave empty for products without sizes, e.g. accessories)
-          </label>
-          {variants.map((v, i) => (
-            <div key={i} className="mb-2 flex gap-2">
-              <input
-                value={v.size}
-                onChange={(e) => {
-                  const next = [...variants];
-                  next[i].size = e.target.value;
-                  setVariants(next);
-                }}
-                placeholder="Size (e.g. M)"
-                className="w-24 rounded-md border border-ink/15 px-3 py-2 font-mono text-xs"
-              />
-              <input
-                type="number"
-                value={v.stock}
-                onChange={(e) => {
-                  const next = [...variants];
-                  next[i].stock = parseInt(e.target.value, 10) || 0;
-                  setVariants(next);
-                }}
-                placeholder="Stock"
-                className="w-24 rounded-md border border-ink/15 px-3 py-2 font-mono text-xs"
-              />
+        {!isEditMode && (
+          <>
+            <div>
+              <label className="mb-1 block font-body text-xs font-semibold text-ink/60">
+                Image URLs (first one is the primary image)
+              </label>
+              {imageUrls.map((url, i) => (
+                <div key={i} className="mb-2 flex gap-2">
+                  <input
+                    value={url}
+                    onChange={(e) => {
+                      const next = [...imageUrls];
+                      next[i] = e.target.value;
+                      setImageUrls(next);
+                    }}
+                    placeholder="https://..."
+                    className="flex-1 rounded-md border border-ink/15 px-3 py-2 font-mono text-xs"
+                  />
+                  {imageUrls.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setImageUrls(imageUrls.filter((_, idx) => idx !== i))}
+                      className="rounded-md border border-ink/15 px-2 text-ink/50"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
               <button
                 type="button"
-                onClick={() => setVariants(variants.filter((_, idx) => idx !== i))}
-                className="rounded-md border border-ink/15 px-2 text-ink/50"
+                onClick={() => setImageUrls([...imageUrls, ""])}
+                className="font-body text-xs font-semibold text-pink"
               >
-                ✕
+                + Add another image
               </button>
             </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => setVariants([...variants, { size: "", stock: 0 }])}
-            className="font-body text-xs font-semibold text-pink"
-          >
-            + Add a size
-          </button>
-        </div>
 
-        <div>
-          <label className="mb-1 block font-body text-xs font-semibold text-ink/60">
-            Show in collections (homepage rails)
-          </label>
-          <div className="flex flex-wrap gap-3">
-            {collections.map((c) => (
-              <label key={c.id} className="flex items-center gap-1.5 font-body text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={selectedCollections.includes(c.id)}
-                  onChange={(e) =>
-                    setSelectedCollections(
-                      e.target.checked
-                        ? [...selectedCollections, c.id]
-                        : selectedCollections.filter((id) => id !== c.id)
-                    )
-                  }
-                />
-                {c.name}
+            <div>
+              <label className="mb-1 block font-body text-xs font-semibold text-ink/60">
+                Sizes (leave empty for products without sizes, e.g. accessories)
               </label>
-            ))}
-          </div>
-        </div>
+              {variants.map((v, i) => (
+                <div key={i} className="mb-2 flex gap-2">
+                  <input
+                    value={v.size}
+                    onChange={(e) => {
+                      const next = [...variants];
+                      next[i].size = e.target.value;
+                      setVariants(next);
+                    }}
+                    placeholder="Size (e.g. M)"
+                    className="w-24 rounded-md border border-ink/15 px-3 py-2 font-mono text-xs"
+                  />
+                  <input
+                    type="number"
+                    value={v.stock}
+                    onChange={(e) => {
+                      const next = [...variants];
+                      next[i].stock = parseInt(e.target.value, 10) || 0;
+                      setVariants(next);
+                    }}
+                    placeholder="Stock"
+                    className="w-24 rounded-md border border-ink/15 px-3 py-2 font-mono text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setVariants(variants.filter((_, idx) => idx !== i))}
+                    className="rounded-md border border-ink/15 px-2 text-ink/50"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setVariants([...variants, { size: "", stock: 0 }])}
+                className="font-body text-xs font-semibold text-pink"
+              >
+                + Add a size
+              </button>
+            </div>
+
+            <div>
+              <label className="mb-1 block font-body text-xs font-semibold text-ink/60">
+                Show in collections (homepage rails)
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {collections.map((c) => (
+                  <label key={c.id} className="flex items-center gap-1.5 font-body text-sm text-ink">
+                    <input
+                      type="checkbox"
+                      checked={selectedCollections.includes(c.id)}
+                      onChange={(e) =>
+                        setSelectedCollections(
+                          e.target.checked
+                            ? [...selectedCollections, c.id]
+                            : selectedCollections.filter((cid) => cid !== c.id)
+                        )
+                      }
+                    />
+                    {c.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         {message && (
           <p
@@ -394,13 +485,24 @@ export default function AdminProductForm() {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-full btn-gradient py-3.5 font-body text-sm font-bold text-white disabled:opacity-50"
-        >
-          {submitting ? "Creating..." : "Create product"}
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="flex-1 rounded-full btn-gradient py-3.5 font-body text-sm font-bold text-white disabled:opacity-50"
+          >
+            {submitting ? "Saving..." : isEditMode ? "Save changes" : "Create product"}
+          </button>
+          {isEditMode && (
+            <button
+              type="button"
+              onClick={() => navigate("/admin/products")}
+              className="rounded-full border border-border px-5 py-3.5 font-body text-sm font-bold text-ink"
+            >
+              Back to list
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );

@@ -139,10 +139,26 @@ class ProductUpdate(BaseModel):
     mrp: float | None = None
     sale_price: float | None = None
     stock_total: int | None = None
+    stock_remaining: int | None = None
     dispatch_hours: int | None = None
     is_flash_deal: bool | None = None
     flash_deal_ends_at: str | None = None
     is_active: bool | None = None  # publish/unpublish
+
+
+@router.get("/products/{product_id}")
+def get_product_for_edit(product_id: str):
+    sb = get_supabase()
+    res = (
+        sb.table("products")
+        .select("*, product_images(url, is_primary), product_variants(id, size, stock)")
+        .eq("id", product_id)
+        .single()
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(404, "Product not found")
+    return res.data
 
 
 @router.patch("/products/{product_id}")

@@ -153,6 +153,13 @@ export default function StickyTopNav() {
                       >
                         My Orders
                       </Link>
+                      <Link
+                        to="/wishlist"
+                        onClick={() => setAccountOpen(false)}
+                        className="block rounded-md px-3 py-2 font-body text-sm text-ink hover:bg-panel"
+                      >
+                        My Wishlist
+                      </Link>
                       <button
                         onClick={handleLogout}
                         className="w-full rounded-md px-3 py-2 text-left font-body text-sm text-pink hover:bg-panel"
