@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
 import { api } from "../lib/api";
@@ -20,12 +20,20 @@ interface AddressForm {
   pincode: string;
 }
 
+interface SavedAddress extends AddressForm {
+  id: string;
+}
+
 export default function Checkout() {
   const { items } = useCart();
   const location = useLocation() as { state?: { discount?: number; couponCode?: string } };
   const navigate = useNavigate();
   const discount = location.state?.discount || 0;
   const couponCode = location.state?.couponCode || null;
+
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [addingNew, setAddingNew] = useState(false);
 
   const [address, setAddress] = useState<AddressForm>({
     full_name: "",
@@ -38,6 +46,21 @@ export default function Checkout() {
   });
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from("addresses")
+      .select("*")
+      .order("is_default", { ascending: false })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setSavedAddresses(data as SavedAddress[]);
+          setSelectedAddressId(data[0].id);
+        } else {
+          setAddingNew(true);
+        }
+      });
+  }, []);
 
   const subtotal = items.reduce((sum, i) => sum + i.products.sale_price * i.quantity, 0);
   const total = Math.max(0, subtotal - discount);
@@ -54,24 +77,37 @@ export default function Checkout() {
 
   const handlePlaceOrder = async () => {
     setError(null);
-    if (!address.full_name || !address.phone || !address.line1 || !address.pincode) {
-      setError("Please fill in all required address fields");
-      return;
+
+    let addressId = selectedAddressId;
+    let prefillName = "";
+    let prefillPhone = "";
+
+    if (addingNew || !addressId) {
+      if (!address.full_name || !address.phone || !address.line1 || !address.pincode) {
+        setError("Please fill in all required address fields");
+        return;
+      }
     }
 
     setPlacing(true);
     try {
-      // 1. save address directly via Supabase (RLS scopes it to the logged-in user)
-      const { data: userData } = await supabase.auth.getUser();
-      const { data: addressRow, error: addressErr } = await supabase
-        .from("addresses")
-        .insert({ ...address, user_id: userData.user?.id })
-        .select()
-        .single();
-      if (addressErr) throw addressErr;
-      const addressId = addressRow.id;
+      if (addingNew || !addressId) {
+        const { data: userData } = await supabase.auth.getUser();
+        const { data: addressRow, error: addressErr } = await supabase
+          .from("addresses")
+          .insert({ ...address, user_id: userData.user?.id, is_default: savedAddresses.length === 0 })
+          .select()
+          .single();
+        if (addressErr) throw addressErr;
+        addressId = addressRow.id;
+        prefillName = address.full_name;
+        prefillPhone = address.phone;
+      } else {
+        const chosen = savedAddresses.find((a) => a.id === addressId);
+        prefillName = chosen?.full_name || "";
+        prefillPhone = chosen?.phone || "";
+      }
 
-      // 2. create order + Razorpay order
       const orderRes = await api.post("/orders", {
         address_id: addressId,
         items: items.map((i) => ({
@@ -88,7 +124,6 @@ export default function Checkout() {
 
       const { order_id, razorpay_order_id, amount, currency, razorpay_key_id } = orderRes.data;
 
-      // 3. open Razorpay checkout
       const loaded = await loadRazorpayScript();
       if (!loaded) {
         setError("Could not load payment gateway. Check your connection and try again.");
@@ -104,10 +139,10 @@ export default function Checkout() {
         description: "Order payment",
         order_id: razorpay_order_id,
         prefill: {
-          name: address.full_name,
-          contact: address.phone,
+          name: prefillName,
+          contact: prefillPhone,
         },
-        theme: { color: "#FF4D6D" },
+        theme: { color: "#E23B3B" },
         handler: async (response: any) => {
           await api.post("/orders/verify-payment", {
             order_id,
@@ -132,52 +167,96 @@ export default function Checkout() {
     <div className="mx-auto max-w-lg px-4 py-6">
       <h1 className="mb-4 font-display text-2xl font-bold text-ink">Delivery Address</h1>
 
-      <div className="space-y-3">
-        <input
-          placeholder="Full name"
-          value={address.full_name}
-          onChange={(e) => setAddress({ ...address, full_name: e.target.value })}
-          className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
-        />
-        <input
-          placeholder="Phone number"
-          value={address.phone}
-          onChange={(e) => setAddress({ ...address, phone: e.target.value })}
-          className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
-        />
-        <input
-          placeholder="Address line 1"
-          value={address.line1}
-          onChange={(e) => setAddress({ ...address, line1: e.target.value })}
-          className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
-        />
-        <input
-          placeholder="Address line 2 (optional)"
-          value={address.line2}
-          onChange={(e) => setAddress({ ...address, line2: e.target.value })}
-          className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
-        />
-        <div className="grid grid-cols-2 gap-3">
+      {savedAddresses.length > 0 && !addingNew && (
+        <div className="space-y-2">
+          {savedAddresses.map((a) => (
+            <label
+              key={a.id}
+              className={`block cursor-pointer rounded-card border p-3 ${
+                selectedAddressId === a.id ? "border-ink" : "border-border"
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <input
+                  type="radio"
+                  checked={selectedAddressId === a.id}
+                  onChange={() => setSelectedAddressId(a.id)}
+                  className="mt-1"
+                />
+                <div className="font-body text-sm text-ink">
+                  <p className="font-semibold">{a.full_name} · {a.phone}</p>
+                  <p className="text-muted">
+                    {a.line1}{a.line2 ? `, ${a.line2}` : ""}, {a.city}, {a.state} {a.pincode}
+                  </p>
+                </div>
+              </div>
+            </label>
+          ))}
+          <button
+            onClick={() => setAddingNew(true)}
+            className="font-body text-xs font-semibold text-pink underline"
+          >
+            + Use a different address
+          </button>
+        </div>
+      )}
+
+      {addingNew && (
+        <div className="space-y-3">
+          {savedAddresses.length > 0 && (
+            <button
+              onClick={() => setAddingNew(false)}
+              className="font-body text-xs font-semibold text-pink underline"
+            >
+              ← Use a saved address instead
+            </button>
+          )}
           <input
-            placeholder="City"
-            value={address.city}
-            onChange={(e) => setAddress({ ...address, city: e.target.value })}
-            className="rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
+            placeholder="Full name"
+            value={address.full_name}
+            onChange={(e) => setAddress({ ...address, full_name: e.target.value })}
+            className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
           />
           <input
-            placeholder="State"
-            value={address.state}
-            onChange={(e) => setAddress({ ...address, state: e.target.value })}
-            className="rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
+            placeholder="Phone number"
+            value={address.phone}
+            onChange={(e) => setAddress({ ...address, phone: e.target.value })}
+            className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
+          />
+          <input
+            placeholder="Address line 1"
+            value={address.line1}
+            onChange={(e) => setAddress({ ...address, line1: e.target.value })}
+            className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
+          />
+          <input
+            placeholder="Address line 2 (optional)"
+            value={address.line2}
+            onChange={(e) => setAddress({ ...address, line2: e.target.value })}
+            className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              placeholder="City"
+              value={address.city}
+              onChange={(e) => setAddress({ ...address, city: e.target.value })}
+              className="rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
+            />
+            <input
+              placeholder="State"
+              value={address.state}
+              onChange={(e) => setAddress({ ...address, state: e.target.value })}
+              className="rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
+            />
+          </div>
+          <input
+            placeholder="Pincode"
+            value={address.pincode}
+            onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
+            className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
           />
         </div>
-        <input
-          placeholder="Pincode"
-          value={address.pincode}
-          onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
-          className="w-full rounded-md border border-ink/15 px-3 py-2.5 font-body text-sm"
-        />
-      </div>
+      )}
 
       <div className="mt-6 space-y-1.5 rounded-card bg-white p-4 font-mono text-sm">
         <div className="flex justify-between text-ink/70">

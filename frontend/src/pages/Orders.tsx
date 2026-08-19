@@ -6,17 +6,39 @@ interface Order {
   id: string;
   status: string;
   total: number;
+  payment_status: string;
   created_at: string;
+  tracking_number: string | null;
+  carrier: string | null;
+  refund_status: string;
   order_items: { title_snapshot: string; quantity: number; price_snapshot: number }[];
 }
+
+const CANCELLABLE = new Set(["pending", "paid", "processing"]);
 
 export default function Orders() {
   const location = useLocation() as { state?: { justPlaced?: boolean } };
   const [orders, setOrders] = useState<Order[]>([]);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
     api.get<Order[]>("/orders").then((res) => setOrders(res.data));
-  }, []);
+  };
+
+  useEffect(load, []);
+
+  const handleCancel = async (orderId: string) => {
+    if (!confirm("Cancel this order?")) return;
+    setCancellingId(orderId);
+    try {
+      await api.post(`/orders/${orderId}/cancel`);
+      load();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || "Couldn't cancel this order.");
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -41,6 +63,26 @@ export default function Orders() {
               ))}
             </div>
             <p className="mt-2 font-mono text-sm font-bold text-ink">Total: ₹{o.total}</p>
+
+            {o.tracking_number && (
+              <p className="mt-2 font-body text-xs text-muted">
+                Tracking: <span className="font-mono text-ink">{o.tracking_number}</span>
+                {o.carrier && ` (${o.carrier})`}
+              </p>
+            )}
+            {o.refund_status !== "none" && (
+              <p className="mt-1 font-body text-xs capitalize text-pink">Refund: {o.refund_status}</p>
+            )}
+
+            {CANCELLABLE.has(o.status) && (
+              <button
+                onClick={() => handleCancel(o.id)}
+                disabled={cancellingId === o.id}
+                className="mt-3 font-body text-xs font-semibold text-pink underline disabled:opacity-50"
+              >
+                {cancellingId === o.id ? "Cancelling..." : "Cancel order"}
+              </button>
+            )}
           </div>
         ))}
         {orders.length === 0 && (

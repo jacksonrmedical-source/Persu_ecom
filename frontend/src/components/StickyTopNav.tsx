@@ -72,7 +72,7 @@ export default function StickyTopNav() {
 
   return (
     <header className="sticky top-0 z-40">
-      <div className="bg-pink px-4" style={{ minHeight: 72 }}>
+      <div className="bg-ink px-4" style={{ minHeight: 72 }}>
         <div className="mx-auto flex h-[72px] max-w-7xl items-center gap-4">
           <Link to="/" className="shrink-0" aria-label="PERZN">
             <Logo textOnly textClassName="text-3xl" />

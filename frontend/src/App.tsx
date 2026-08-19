@@ -10,6 +10,7 @@ import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import Orders from "./pages/Orders";
 import AdminGate from "./pages/admin/AdminGate";
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/account" element={<Login />} />

@@ -11,17 +11,21 @@ def list_products(
     is_flash_deal: Optional[bool] = None,
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
+    size: Optional[str] = None,
+    in_stock_only: bool = False,
     sort: str = Query("newest", enum=["newest", "price_asc", "price_desc", "discount"]),
     page: int = 1,
     page_size: int = 24,
 ):
     sb = get_supabase()
-    # categories!inner is required so filtering on categories.slug actually
-    # excludes non-matching rows — a plain embed only nulls the field instead
-    # of filtering, since PostgREST embeds default to a left join.
+    # categories!inner and product_variants!inner are required so filtering
+    # on their columns actually excludes non-matching rows — a plain embed
+    # only nulls the field instead of filtering, since PostgREST embeds
+    # default to a left join.
     category_embed = "categories!inner(slug, name)" if category_slug else "categories(slug, name)"
+    variant_embed = "product_variants!inner(size, stock)" if size else "product_variants(size, stock)"
     q = sb.table("products").select(
-        f"*, product_images(url, is_primary), {category_embed}",
+        f"*, product_images(url, is_primary), {category_embed}, {variant_embed}",
         count="exact",
     ).eq("is_active", True)
 
@@ -33,6 +37,10 @@ def list_products(
         q = q.gte("sale_price", min_price)
     if max_price is not None:
         q = q.lte("sale_price", max_price)
+    if size:
+        q = q.eq("product_variants.size", size)
+    if in_stock_only:
+        q = q.gt("stock_remaining", 0)
 
     if sort == "price_asc":
         q = q.order("sale_price")

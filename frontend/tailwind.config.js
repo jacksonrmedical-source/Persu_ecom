@@ -4,14 +4,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Walmart-inspired palette, ASOS-style neutral/dense structure
-        pink: "#0A0F2D",       // = jersey navy — primary header/CTA
-        purple: "#0A0F2D",     // = jersey navy — footer (same tone, unified with header)
-        gold: "#F57E1F",       // = jersey orange — spark accent, strip, badges
-        amber: "#0A0F2D",
-        ink: "#1A1A1A",        // near-black, ASOS-style body/heading text
+        // Uniform system C: black structure, single red accent everywhere —
+        // pink/gold intentionally share the same red value so every
+        // accent usage (buttons, links, badges, active states, the logo's Z)
+        // stays in sync from one change, instead of drifting independently.
+        pink: "#E23B3B",       // THE single accent — CTAs, links, active states, badges
+        purple: "#141414",     // structure — not directly used by most components
+        gold: "#E23B3B",       // alias to the same accent (was a separate orange/gold before)
+        amber: "#141414",
+        ink: "#141414",        // black structure color
         muted: "#707070",      // cool gray meta text
-        sand: "#FFFFFF",       // stark white canvas — ASOS is not warm/cream
+        sand: "#FFFFFF",       // stark white canvas
         panel: "#F5F5F5",
         border: "#E5E5E5",
         teal: "#2E7D32",       // = success/delivered

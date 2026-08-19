@@ -56,14 +56,16 @@ export default function ProductCard({ product, compact = true, forceDealEndTime 
         <button
           aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
           onClick={handleWishlistClick}
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-muted hover:text-pink"
+          className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 hover:text-pink ${
+            isWishlisted ? "text-pink" : "text-muted"
+          }`}
         >
           <svg
             width="15"
             height="15"
             viewBox="0 0 24 24"
-            fill={isWishlisted ? "#0A0F2D" : "none"}
-            stroke={isWishlisted ? "#0A0F2D" : "currentColor"}
+            fill={isWishlisted ? "currentColor" : "none"}
+            stroke="currentColor"
             strokeWidth="2"
           >
             <path d="M20.8 4.6c-1.8-1.8-4.7-1.8-6.5 0L12 6.9l-2.3-2.3c-1.8-1.8-4.7-1.8-6.5 0-1.8 1.8-1.8 4.7 0 6.5L12 20.4l8.8-9.3c1.8-1.8 1.8-4.7 0-6.5z" />

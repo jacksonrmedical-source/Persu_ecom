@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from app.core.supabase_client import get_supabase
 from app.core.auth import get_current_user_id
 from app.core.config import settings
-from app.core.notifications import send_new_order_email
+from app.core.notifications import send_new_order_email, send_order_confirmation_email
 
 router = APIRouter()
 
@@ -161,6 +161,13 @@ def verify_payment(payload: VerifyPaymentIn, user_id: str = Depends(get_current_
     except Exception:
         pass  # never let a notification failure break the checkout response
 
+    try:
+        customer = sb.auth.admin.get_user_by_id(user_id)
+        if customer and customer.user and customer.user.email:
+            send_order_confirmation_email(customer.user.email, order.data, order.data["order_items"])
+    except Exception:
+        pass
+
     return {"verified": True}
 
 
@@ -175,3 +182,36 @@ def list_my_orders(user_id: str = Depends(get_current_user_id)):
         .execute()
     )
     return res.data
+
+
+@router.post("/{order_id}/cancel")
+def cancel_order(order_id: str, user_id: str = Depends(get_current_user_id)):
+    sb = get_supabase()
+    order = sb.table("orders").select("*, order_items(*)").eq("id", order_id).eq("user_id", user_id).single().execute()
+    if not order.data:
+        raise HTTPException(404, "Order not found")
+
+    cancellable = {"pending", "paid", "processing"}
+    if order.data["status"] not in cancellable:
+        raise HTTPException(400, f"Orders that are already {order.data['status']} can't be cancelled here — contact support.")
+
+    updates = {"status": "cancelled"}
+    # if payment was already taken, flag it for a refund instead of silently
+    # marking cancelled with no money movement
+    if order.data["payment_status"] == "paid":
+        updates["refund_status"] = "requested"
+
+    sb.table("orders").update(updates).eq("id", order_id).execute()
+
+    # restock whatever was reserved for this order
+    for item in order.data["order_items"]:
+        product = sb.table("products").select("stock_remaining, stock_total").eq("id", item["product_id"]).single().execute()
+        if product.data:
+            restored = min(product.data["stock_total"], product.data["stock_remaining"] + item["quantity"])
+            sb.table("products").update({"stock_remaining": restored}).eq("id", item["product_id"]).execute()
+        if item.get("variant_id"):
+            variant = sb.table("product_variants").select("stock").eq("id", item["variant_id"]).single().execute()
+            if variant.data:
+                sb.table("product_variants").update({"stock": variant.data["stock"] + item["quantity"]}).eq("id", item["variant_id"]).execute()
+
+    return {"cancelled": True, "refund_requested": order.data["payment_status"] == "paid"}
